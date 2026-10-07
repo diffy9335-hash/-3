@@ -1,0 +1,40 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./:/app
+      - backups:/app/backups
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: strategy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d strategy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+
+volumes:
+  pgdata:
+  backups:
